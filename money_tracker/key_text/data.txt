@@ -1,0 +1,105 @@
+
+
+1. Khởi tạo class Expense: Giao dịch
+Expense{
+    id -> id: duy nhat moi giao dich
+    title -> tieu de
+    amount -> so_luong
+    date -> thoi gian
+    category -> danh muc
+}
+toMap : Phone -> Server
+fromString : Server -> Phone
+
+2. Khoi tao Danh Muc (Category)
+ExpenseCategory{
+    title : Tieu_De
+    entries = 0 -> bn chi phi trong muc nay
+    totalAmount -> tong chi phi
+    icondata -> icon: icon bieu tuong
+}
+toMap: Phone -> Server
+fromString : Server -> Phone
+
+
+3.Khoi Tao DatabaseProvider: Provider
+ khai bao _search  = ''
+ String get searchText => _searchText;
+ set searchText(String value){.   //function searchText
+    _searchText = value;
+    notifyListeners();
+ }
+
+ //Khai bao category
+ List<ExpenseCategory> _categories = [];  //danh_sach chua
+ List<ExpenseCategory get categories = _categories; //lay danh danh_sach
+List<Expense> _expenses = [];
+
+
+//Tao Database
+Database? _database;
+
+//function: getData
+Future<Database> get database async{
+    final dbDirectory = await getDatabasesPath();
+    const dbName = 'expense_tc.db'
+    final path = join(dbDirectory, dbName)
+    _database = await openDatabase(
+        path,
+        version1,
+        onCreate: _createDb
+    );
+    return  _database;
+}
+
+//Todo: create functions
+static const eTable = 'categoryTable',
+static const eTable = 'expenseTable',
+function<void> _createDb(Database db, int version){}
+
+
+//Todo: Phuong Thuc Nap Du Lieu
+Future<List<ExpenseCategory>> fetchCategory() async{
+    //get the database
+    final db = await database;
+    return await db.transaction((txn) async{
+        return await txn.query(cTable).then((data){
+        //'data' là giá trị tìm nạp của chúng tôi
+        // chuyển nó từ "Map<String, object>" thành "Map<String, dynamic>"
+        final converted = List<Map<String, dynamic>>.from(data);
+        // tạo một 'ExpenseCategory' từ mỗi 'bản đồ' trong 'đã chuyển đổi' này
+        List<ExpenseCategory> nList = List.generate(converted.length,
+        (index) => ExpenseCategory.fromString(converted[index]);
+        // đặt giá trị của 'categories' thành 'nList'
+        _categories = nList;
+        //trả lại '_categories'
+        return _categories;
+        )
+        })
+    })
+}
+
+Todo: updateCategory: Cap Nhat Danh Muc
+Future<void> updateCategory(
+    String category,
+    int nEntries,
+    double nTotalAmount
+){
+    final db = await database;
+    await db.transaction((txn) async{
+       await txn.update(cTable{
+          'entries': nEntries,
+          'toatalAmount': nTotalAmount.toString(),
+       },
+       where: 'title == ?',
+       whereArgs: [category]
+       ).then(
+        (_){
+            var file = _categories.firstWhere((element) => element.title == category);
+            file.entries = nEntries;
+            file.totalAmount = nTotalAmount;
+            notifyListeners();
+        }
+       )
+    });
+}
